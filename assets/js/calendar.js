@@ -1,252 +1,353 @@
-var calendar = document.getElementById("calendar-table");
-var gridTable = document.getElementById("table-body");
-var currentDate = new Date();
-var selectedDate = currentDate;
-var selectedDayBlock = null;
-var globalEventObj = {};
+!function() {
 
-var sidebar = document.getElementById("sidebar");
+  var today = moment();
 
-function createCalendar(date, side) {
-   var currentDate = date;
-   var startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  function Calendar(selector, events) {
+    this.el = document.querySelector(selector);
+    this.events = events;
+    this.current = moment().date(1);
+    this.draw();
+    var current = document.querySelector('.today');
+    if(current) {
+      var self = this;
+      window.setTimeout(function() {
+        self.openDay(current);
+      }, 500);
+    }
+  }
 
-   var monthTitle = document.getElementById("month-name");
-   var monthName = currentDate.toLocaleString("en-US", {
-      month: "long"
-   });
-   var yearNum = currentDate.toLocaleString("en-US", {
-      year: "numeric"
-   });
-   monthTitle.innerHTML = `${monthName} ${yearNum}`;
+  Calendar.prototype.draw = function() {
+    //Create Header
+    this.drawHeader();
 
-   if (side == "left") {
-      gridTable.className = "animated fadeOutRight";
-   } else {
-      gridTable.className = "animated fadeOutLeft";
-   }
+    //Draw Month
+    this.drawMonth();
 
-   setTimeout(() => {
-      gridTable.innerHTML = "";
+    this.drawLegend();
+  }
 
-      var newTr = document.createElement("div");
-      newTr.className = "row";
-      var currentTr = gridTable.appendChild(newTr);
+  Calendar.prototype.drawHeader = function() {
+    var self = this;
+    if(!this.header) {
+      //Create the header elements
+      this.header = createElement('div', 'header');
+      this.header.className = 'header';
 
-      for (let i = 1; i < startDate.getDay(); i++) {
-         let emptyDivCol = document.createElement("div");
-         emptyDivCol.className = "col empty-day";
-         currentTr.appendChild(emptyDivCol);
+      this.title = createElement('h1');
+
+      var right = createElement('div', 'right');
+      right.addEventListener('click', function() { self.nextMonth(); });
+
+      var left = createElement('div', 'left');
+      left.addEventListener('click', function() { self.prevMonth(); });
+
+      //Append the Elements
+      this.header.appendChild(this.title); 
+      this.header.appendChild(right);
+      this.header.appendChild(left);
+      this.el.appendChild(this.header);
+    }
+
+    this.title.innerHTML = this.current.format('MMMM YYYY');
+  }
+
+  Calendar.prototype.drawMonth = function() {
+    var self = this;
+    
+    this.events.forEach(function(ev) {
+     ev.date = self.current.clone().date(Math.random() * (29 - 1) + 1);
+    });
+    
+    
+    if(this.month) {
+      this.oldMonth = this.month;
+      this.oldMonth.className = 'month out ' + (self.next ? 'next' : 'prev');
+      this.oldMonth.addEventListener('webkitAnimationEnd', function() {
+        self.oldMonth.parentNode.removeChild(self.oldMonth);
+        self.month = createElement('div', 'month');
+        self.backFill();
+        self.currentMonth();
+        self.fowardFill();
+        self.el.appendChild(self.month);
+        window.setTimeout(function() {
+          self.month.className = 'month in ' + (self.next ? 'next' : 'prev');
+        }, 16);
+      });
+    } else {
+        this.month = createElement('div', 'month');
+        this.el.appendChild(this.month);
+        this.backFill();
+        this.currentMonth();
+        this.fowardFill();
+        this.month.className = 'month new';
+    }
+  }
+
+  Calendar.prototype.backFill = function() {
+    var clone = this.current.clone();
+    var dayOfWeek = clone.day();
+
+    if(!dayOfWeek) { return; }
+
+    clone.subtract('days', dayOfWeek+1);
+
+    for(var i = dayOfWeek; i > 0 ; i--) {
+      this.drawDay(clone.add('days', 1));
+    }
+  }
+
+  Calendar.prototype.fowardFill = function() {
+    var clone = this.current.clone().add('months', 1).subtract('days', 1);
+    var dayOfWeek = clone.day();
+
+    if(dayOfWeek === 6) { return; }
+
+    for(var i = dayOfWeek; i < 6 ; i++) {
+      this.drawDay(clone.add('days', 1));
+    }
+  }
+
+  Calendar.prototype.currentMonth = function() {
+    var clone = this.current.clone();
+
+    while(clone.month() === this.current.month()) {
+      this.drawDay(clone);
+      clone.add('days', 1);
+    }
+  }
+
+  Calendar.prototype.getWeek = function(day) {
+    if(!this.week || day.day() === 0) {
+      this.week = createElement('div', 'week');
+      this.month.appendChild(this.week);
+    }
+  }
+
+  Calendar.prototype.drawDay = function(day) {
+    var self = this;
+    this.getWeek(day);
+
+    //Outer Day
+    var outer = createElement('div', this.getDayClass(day));
+    outer.addEventListener('click', function() {
+      self.openDay(this);
+    });
+
+    //Day Name
+    var name = createElement('div', 'day-name', day.format('ddd'));
+
+    //Day Number
+    var number = createElement('div', 'day-number', day.format('DD'));
+
+
+    //Events
+    var events = createElement('div', 'day-events');
+    this.drawEvents(day, events);
+
+    outer.appendChild(name);
+    outer.appendChild(number);
+    outer.appendChild(events);
+    this.week.appendChild(outer);
+  }
+
+  Calendar.prototype.drawEvents = function(day, element) {
+    if(day.month() === this.current.month()) {
+      var todaysEvents = this.events.reduce(function(memo, ev) {
+        if(ev.date.isSame(day, 'day')) {
+          memo.push(ev);
+        }
+        return memo;
+      }, []);
+
+      todaysEvents.forEach(function(ev) {
+        var evSpan = createElement('span', ev.color);
+        element.appendChild(evSpan);
+      });
+    }
+  }
+
+  Calendar.prototype.getDayClass = function(day) {
+    classes = ['day'];
+    if(day.month() !== this.current.month()) {
+      classes.push('other');
+    } else if (today.isSame(day, 'day')) {
+      classes.push('today');
+    }
+    return classes.join(' ');
+  }
+
+  Calendar.prototype.openDay = function(el) {
+    var details, arrow;
+    var dayNumber = +el.querySelectorAll('.day-number')[0].innerText || +el.querySelectorAll('.day-number')[0].textContent;
+    var day = this.current.clone().date(dayNumber);
+
+    var currentOpened = document.querySelector('.details');
+
+    //Check to see if there is an open detais box on the current row
+    if(currentOpened && currentOpened.parentNode === el.parentNode) {
+      details = currentOpened;
+      arrow = document.querySelector('.arrow');
+    } else {
+      //Close the open events on differnt week row
+      //currentOpened && currentOpened.parentNode.removeChild(currentOpened);
+      if(currentOpened) {
+        currentOpened.addEventListener('webkitAnimationEnd', function() {
+          currentOpened.parentNode.removeChild(currentOpened);
+        });
+        currentOpened.addEventListener('oanimationend', function() {
+          currentOpened.parentNode.removeChild(currentOpened);
+        });
+        currentOpened.addEventListener('msAnimationEnd', function() {
+          currentOpened.parentNode.removeChild(currentOpened);
+        });
+        currentOpened.addEventListener('animationend', function() {
+          currentOpened.parentNode.removeChild(currentOpened);
+        });
+        currentOpened.className = 'details out';
       }
 
-      var lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      lastDay = lastDay.getDate();
+      //Create the Details Container
+      details = createElement('div', 'details in');
 
-      for (let i = 1; i <= lastDay; i++) {
-         if (currentTr.children.length >= 7) {
-            currentTr = gridTable.appendChild(addNewRow());
-         }
-         let currentDay = document.createElement("div");
-         currentDay.className = "col";
-         if (selectedDayBlock == null && i == currentDate.getDate() || selectedDate.toDateString() == new Date(currentDate.getFullYear(), currentDate.getMonth(), i).toDateString()) {
-            selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+      //Create the arrow
+      var arrow = createElement('div', 'arrow');
 
-            document.getElementById("eventDayName").innerHTML = selectedDate.toLocaleString("en-US", {
-               month: "long",
-               day: "numeric",
-               year: "numeric"
-            });
+      //Create the event wrapper
 
-            selectedDayBlock = currentDay;
-            setTimeout(() => {
-               currentDay.classList.add("blue");
-               currentDay.classList.add("lighten-3");
-            }, 900);
-         }
-         currentDay.innerHTML = i;
+      details.appendChild(arrow);
+      el.parentNode.appendChild(details);
+    }
 
-         //show marks
-         if (globalEventObj[new Date(currentDate.getFullYear(), currentDate.getMonth(), i).toDateString()]) {
-            let eventMark = document.createElement("div");
-            eventMark.className = "day-mark";
-            currentDay.appendChild(eventMark);
-         }
-
-         currentTr.appendChild(currentDay);
+    var todaysEvents = this.events.reduce(function(memo, ev) {
+      if(ev.date.isSame(day, 'day')) {
+        memo.push(ev);
       }
+      return memo;
+    }, []);
 
-      for (let i = currentTr.getElementsByTagName("div").length; i < 7; i++) {
-         let emptyDivCol = document.createElement("div");
-         emptyDivCol.className = "col empty-day";
-         currentTr.appendChild(emptyDivCol);
+    this.renderEvents(todaysEvents, details);
+
+    arrow.style.left = el.offsetLeft - el.parentNode.offsetLeft + 27 + 'px';
+  }
+
+  Calendar.prototype.renderEvents = function(events, ele) {
+    //Remove any events in the current details element
+    var currentWrapper = ele.querySelector('.events');
+    var wrapper = createElement('div', 'events in' + (currentWrapper ? ' new' : ''));
+
+    events.forEach(function(ev) {
+      var div = createElement('div', 'event');
+      var square = createElement('div', 'event-category ' + ev.color);
+      var span = createElement('span', '', ev.eventName);
+
+      div.appendChild(square);
+      div.appendChild(span);
+      wrapper.appendChild(div);
+    });
+
+    if(!events.length) {
+      var div = createElement('div', 'event empty');
+      var span = createElement('span', '', 'No Events');
+
+      div.appendChild(span);
+      wrapper.appendChild(div);
+    }
+
+    if(currentWrapper) {
+      currentWrapper.className = 'events out';
+      currentWrapper.addEventListener('webkitAnimationEnd', function() {
+        currentWrapper.parentNode.removeChild(currentWrapper);
+        ele.appendChild(wrapper);
+      });
+      currentWrapper.addEventListener('oanimationend', function() {
+        currentWrapper.parentNode.removeChild(currentWrapper);
+        ele.appendChild(wrapper);
+      });
+      currentWrapper.addEventListener('msAnimationEnd', function() {
+        currentWrapper.parentNode.removeChild(currentWrapper);
+        ele.appendChild(wrapper);
+      });
+      currentWrapper.addEventListener('animationend', function() {
+        currentWrapper.parentNode.removeChild(currentWrapper);
+        ele.appendChild(wrapper);
+      });
+    } else {
+      ele.appendChild(wrapper);
+    }
+  }
+
+  Calendar.prototype.drawLegend = function() {
+    var legend = createElement('div', 'legend');
+    var calendars = this.events.map(function(e) {
+      return e.calendar + '|' + e.color;
+    }).reduce(function(memo, e) {
+      if(memo.indexOf(e) === -1) {
+        memo.push(e);
       }
+      return memo;
+    }, []).forEach(function(e) {
+      var parts = e.split('|');
+      var entry = createElement('span', 'entry ' +  parts[1], parts[0]);
+      legend.appendChild(entry);
+    });
+    this.el.appendChild(legend);
+  }
 
-      if (side == "left") {
-         gridTable.className = "animated fadeInLeft";
-      } else {
-         gridTable.className = "animated fadeInRight";
-      }
+  Calendar.prototype.nextMonth = function() {
+    this.current.add('months', 1);
+    this.next = true;
+    this.draw();
+  }
 
-      function addNewRow() {
-         let node = document.createElement("div");
-         node.className = "row";
-         return node;
-      }
+  Calendar.prototype.prevMonth = function() {
+    this.current.subtract('months', 1);
+    this.next = false;
+    this.draw();
+  }
 
-   }, !side ? 0 : 270);
-}
+  window.Calendar = Calendar;
 
-createCalendar(currentDate);
+  function createElement(tagName, className, innerText) {
+    var ele = document.createElement(tagName);
+    if(className) {
+      ele.className = className;
+    }
+    if(innerText) {
+      ele.innderText = ele.textContent = innerText;
+    }
+    return ele;
+  }
+}();
 
-var todayDayName = document.getElementById("todayDayName");
-todayDayName.innerHTML = "Today is " + currentDate.toLocaleString("en-US", {
-   weekday: "long",
-   day: "numeric",
-   month: "short"
-});
+!function() {
+  var data = [
+    { eventName: 'Lunch Meeting w/ Mark', calendar: 'Work', color: 'orange' },
+    { eventName: 'Interview - Jr. Web Developer', calendar: 'Work', color: 'orange' },
+    { eventName: 'Demo New App to the Board', calendar: 'Work', color: 'orange' },
+    { eventName: 'Dinner w/ Marketing', calendar: 'Work', color: 'orange' },
 
-var prevButton = document.getElementById("prev");
-var nextButton = document.getElementById("next");
+    { eventName: 'Game vs Portalnd', calendar: 'Sports', color: 'blue' },
+    { eventName: 'Game vs Houston', calendar: 'Sports', color: 'blue' },
+    { eventName: 'Game vs Denver', calendar: 'Sports', color: 'blue' },
+    { eventName: 'Game vs San Degio', calendar: 'Sports', color: 'blue' },
 
-prevButton.onclick = function changeMonthPrev() {
-   currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1);
-   createCalendar(currentDate, "left");
-}
-nextButton.onclick = function changeMonthNext() {
-   currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1);
-   createCalendar(currentDate, "right");
-}
+    { eventName: 'School Play', calendar: 'Kids', color: 'yellow' },
+    { eventName: 'Parent/Teacher Conference', calendar: 'Kids', color: 'yellow' },
+    { eventName: 'Pick up from Soccer Practice', calendar: 'Kids', color: 'yellow' },
+    { eventName: 'Ice Cream Night', calendar: 'Kids', color: 'yellow' },
 
-function addEvent(title, desc) {
-   if (!globalEventObj[selectedDate.toDateString()]) {
-      globalEventObj[selectedDate.toDateString()] = {};
-   }
-   globalEventObj[selectedDate.toDateString()][title] = desc;
-}
+    { eventName: 'Free Tamale Night', calendar: 'Other', color: 'green' },
+    { eventName: 'Bowling Team', calendar: 'Other', color: 'green' },
+    { eventName: 'Teach Kids to Code', calendar: 'Other', color: 'green' },
+    { eventName: 'Startup Weekend', calendar: 'Other', color: 'green' }
+  ];
 
-function showEvents() {
-   let sidebarEvents = document.getElementById("sidebarEvents");
-   let objWithDate = globalEventObj[selectedDate.toDateString()];
+  
 
-   sidebarEvents.innerHTML = "";
+  function addDate(ev) {
+    
+  }
 
-   if (objWithDate) {
-      let eventsCount = 0;
-      for (key in globalEventObj[selectedDate.toDateString()]) {
-         let eventContainer = document.createElement("div");
-         eventContainer.className = "eventCard";
+  var calendar = new Calendar('#calendar', data);
 
-         let eventHeader = document.createElement("div");
-         eventHeader.className = "eventCard-header";
-
-         let eventDescription = document.createElement("div");
-         eventDescription.className = "eventCard-description";
-
-         eventHeader.appendChild(document.createTextNode(key));
-         eventContainer.appendChild(eventHeader);
-
-         eventDescription.appendChild(document.createTextNode(objWithDate[key]));
-         eventContainer.appendChild(eventDescription);
-
-         let markWrapper = document.createElement("div");
-         markWrapper.className = "eventCard-mark-wrapper";
-         let mark = document.createElement("div");
-         mark.classList = "eventCard-mark";
-         markWrapper.appendChild(mark);
-         eventContainer.appendChild(markWrapper);
-
-         sidebarEvents.appendChild(eventContainer);
-
-         eventsCount++;
-      }
-      let emptyFormMessage = document.getElementById("emptyFormTitle");
-      emptyFormMessage.innerHTML = `${eventsCount} events now`;
-   } else {
-      let emptyMessage = document.createElement("div");
-      emptyMessage.className = "empty-message";
-      emptyMessage.innerHTML = "Sorry, no events to selected date";
-      sidebarEvents.appendChild(emptyMessage);
-      let emptyFormMessage = document.getElementById("emptyFormTitle");
-      emptyFormMessage.innerHTML = "No events now";
-   }
-}
-
-gridTable.onclick = function (e) {
-
-   if (!e.target.classList.contains("col") || e.target.classList.contains("empty-day")) {
-      return;
-   }
-
-   if (selectedDayBlock) {
-      if (selectedDayBlock.classList.contains("blue") && selectedDayBlock.classList.contains("lighten-3")) {
-         selectedDayBlock.classList.remove("blue");
-         selectedDayBlock.classList.remove("lighten-3");
-      }
-   }
-   selectedDayBlock = e.target;
-   selectedDayBlock.classList.add("blue");
-   selectedDayBlock.classList.add("lighten-3");
-
-   selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), parseInt(e.target.innerHTML));
-
-   showEvents();
-
-   document.getElementById("eventDayName").innerHTML = selectedDate.toLocaleString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric"
-   });
-
-}
-
-var changeFormButton = document.getElementById("changeFormButton");
-var addForm = document.getElementById("addForm");
-changeFormButton.onclick = function (e) {
-   addForm.style.top = 0;
-}
-
-var cancelAdd = document.getElementById("cancelAdd");
-cancelAdd.onclick = function (e) {
-   addForm.style.top = "100%";
-   let inputs = addForm.getElementsByTagName("input");
-   for (let i = 0; i < inputs.length; i++) {
-      inputs[i].value = "";
-   }
-   let labels = addForm.getElementsByTagName("label");
-   for (let i = 0; i < labels.length; i++) {
-      labels[i].className = "";
-   }
-}
-
-var addEventButton = document.getElementById("addEventButton");
-addEventButton.onclick = function (e) {
-   let title = document.getElementById("eventTitleInput").value.trim();
-   let desc = document.getElementById("eventDescInput").value.trim();
-
-   if (!title || !desc) {
-      document.getElementById("eventTitleInput").value = "";
-      document.getElementById("eventDescInput").value = "";
-      let labels = addForm.getElementsByTagName("label");
-      for (let i = 0; i < labels.length; i++) {
-         labels[i].className = "";
-      }
-      return;
-   }
-
-   addEvent(title, desc);
-   showEvents();
-
-   if (!selectedDayBlock.querySelector(".day-mark")) {
-      selectedDayBlock.appendChild(document.createElement("div")).className = "day-mark";
-   }
-
-   let inputs = addForm.getElementsByTagName("input");
-   for (let i = 0; i < inputs.length; i++) {
-      inputs[i].value = "";
-   }
-   let labels = addForm.getElementsByTagName("label");
-   for (let i = 0; i < labels.length; i++) {
-      labels[i].className = "";
-   }
-
-}
+}();

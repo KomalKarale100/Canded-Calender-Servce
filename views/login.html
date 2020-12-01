@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.png">
+
+    <title> Canded | Daily text messages to reflect on your brainspace</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/sign-in/">
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- Custom styles for this template -->
+    <link href="assets/css/signup.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js" defer></script>
+    <script src="https://kit.fontawesome.com/0ea01178e5.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+</head>
+
+
+<body class="text-center body-image">
+    <div class="container">
+        <div class="row">
+            <div class="alert alert-danger alert-dismissible fade show col-12" id="alertTop" role="alert">
+                <strong>Sign in failed!</strong> You should check your email and pass.
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div> <br><br>
+            <div class="col-12">
+                <form class="form-signin" id="login">
+                    <!-- <img class="mb-4" src="assets/img/preloader.png" alt=""> -->
+
+                    <h1 class="h3 mb-3" style="font-weight:bold; color:#8429F2">Sign in</h1>
+                    <label for="inputEmail" class="sr-only">Email address</label>
+                    <input type="email" id="inputEmail" class="form-control" placeholder="Email address" name="login"
+                        required autofocus>
+                    <label for="inputPassword" class="sr-only">Password</label>
+                    <input type="password" id="inputPassword" class="form-control" name="password"
+                        placeholder="Password" required>
+
+
+                    <div style="text-align: left; padding-left: 0.4rem; padding-top:0.5rem">
+                        <input type="checkbox" id="showPassword" onclick="show()" />
+                        <label for="showPassword" style="padding-left:0.4rem; font-weight:700;color:#8429F2">Show
+                            password</label>
+                    </div>
+                    <script>
+                        function show() {
+
+                            var x = document.getElementById("inputPassword");
+                            if (x.type === "password") {
+                                x.type = "text";
+                            } else {
+                                x.type = "password";
+                            }
+                        }
+                    </script>
+
+
+
+                    <div class="checkbox mb-3" style="text-align: center;">
+                        <div class="row" style="padding-left: 35%;">
+
+
+
+                            <div class="col-2 social-media-div" style="background-color: #ED2235;" id="google">
+                                <a href="#" style="color: white;"><i class="fab fa-google"></i> </a>
+                            </div>
+
+                            <div class="col-2 social-media-div" id="facebook" style="background-color: #3C5A9A;">
+                                <a href="#" style="color: white;"><i class="fab fa-facebook-f"></i> </a>
+                            </div>
+                            <!-- 
+                            <div class="col-2 social-media-div" style="background-color: #1B9FF1;">
+                                <a href="#" style="color: white;"><i class="fab fa-twitter"></i> </a>
+                            </div> -->
+                        </div>
+                    </div>
+                    <button class="btn btn-lg  btn-block" style="background-color:#8429F2 ; color:white"
+                        type="submit">Sign
+                        in</button>
+                    <p class="mt-5 mb-3">Don't have an account? <strong> <a href="/signup" style="color: #8429F2;">Sign
+                                up</a></strong> </p>
+
+                    <script>
+
+
+
+                        window.addEventListener("DOMContentLoaded", () => {
+
+
+                            $("#alertTop").css('display', 'none');
+
+                            const firebaseConfig = {
+
+                                apiKey: "AIzaSyDd-dKBBxrgEwSaDcTKntk2tJYXjPOoRZ0",
+                                authDomain: "canded-1ccc6.firebaseapp.com",
+                                databaseURL: "https://canded-1ccc6.firebaseio.com",
+                                projectId: "canded-1ccc6",
+                                storageBucket: "canded-1ccc6.appspot.com",
+                                messagingSenderId: "821988719347",
+                                appId: "1:821988719347:web:f58ad1fbd04a71fe80d586",
+                                measurementId: "G-KET84ERS81"
+
+                            };
+
+                            firebase.initializeApp(firebaseConfig);
+
+                            firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+
+                            document
+                                .getElementById("login")
+                                .addEventListener("submit", (event) => {
+                                    event.preventDefault();
+                                    const login = event.target.login.value;
+                                    const password = event.target.password.value;
+
+                                    firebase
+                                        .auth()
+                                        .signInWithEmailAndPassword(login, password)
+                                        .then(({ user }) => {
+
+                                            return user.getIdToken().then((idToken) => {
+                                                return fetch("/sessionLogin", {
+                                                    method: "POST",
+                                                    headers: {
+                                                        Accept: "application/json",
+                                                        "Content-Type": "application/json",
+                                                        "CSRF-Token": Cookies.get("XSRF-TOKEN"),
+                                                    },
+                                                    body: JSON.stringify({ idToken }),
+                                                });
+                                            });
+
+
+                                        })
+                                        // .then(() => {
+                                        //      return firebase.auth().signOut();
+                                        //  })
+                                        .then(() => {
+                                            window.location.assign("/subscribe");
+                                        }).catch(function (error) {
+                                            $("#alertTop").css('display', 'block');
+                                        })
+
+
+
+                                });
+
+
+
+
+
+                            document
+                                .getElementById("google")
+                                .addEventListener("click", (event) => {
+
+                                    var provider = new firebase.auth.GoogleAuthProvider();
+
+                                    firebase.auth().signInWithRedirect(provider);
+                                    firebase.auth().getRedirectResult().then(function (result) {
+                                        if (result.credential) {
+                                            // This gives you a Google Access Token. You can use it to access the Google API.
+                                            var token = result.credential.accessToken;
+                                            // ...
+                                            window.location.assign("/subscribe");
+                                        }
+                                        // The signed-in user info.
+                                        var user = result.user;
+                                    }).catch(function (error) {
+                                        // Handle Errors here.
+                                        var errorCode = error.code;
+                                        var errorMessage = error.message;
+                                        // The email of the user's account used.
+                                        var email = error.email;
+                                        // The firebase.auth.AuthCredential type that was used.
+                                        var credential = error.credential;
+                                        // ...
+                                    });
+                                });
+
+                            document
+                                .getElementById("facebook")
+                                .addEventListener("click", (event) => {
+
+                                    var provider = new firebase.auth.FacebookAuthProvider();
+                                    firebase.auth().signInWithRedirect(provider);
+                                    firebase.auth().getRedirectResult().then(function (result) {
+                                        if (result.credential) {
+                                            // This gives you a Google Access Token. You can use it to access the Google API.
+                                            var token = result.credential.accessToken;
+                                            // ...
+                                            window.location.assign("/subscribe");
+                                        }
+                                        // The signed-in user info.
+                                        var user = result.user;
+                                    }).catch(function (error) {
+                                        // Handle Errors here.
+                                        var errorCode = error.code;
+                                        var errorMessage = error.message;
+                                        // The email of the user's account used.
+                                        var email = error.email;
+                                        // The firebase.auth.AuthCredential type that was used.
+                                        var credential = error.credential;
+                                        // ...
+                                    });
+
+                                });
+
+                            firebase.auth().onAuthStateChanged(function (user) {
+                                if (user) {
+                                    window.alert("Please wait, we're signing you in");
+                                    window.location.assign("/subscribe");
+                                } else {
+                                    // No user is signed in.
+                                }
+                            });
+
+
+                            document.getElementById("forgot-password").addEventListener("click", function () {
+                                var auth = firebase.auth();
+                                var emailAddress = document.getElementById("inputEmail").value;
+
+                                auth.sendPasswordResetEmail(emailAddress).then(function () {
+                                    window.alert("Password resert mail sent successfully");
+                                }).catch(function (error) {
+                                    // An error happened.
+                                });
+                            });
+
+
+                        });
+                    </script>
+                </form>
+                <div>
+                    <br>
+                    <a href="#">
+                        <p style="font-weight: 700; color:white" id="forgot-password">Forgot Password ?</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+
+</html>
+<!-- <p style="font-family: cursive;"></p> -->

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/img/favicon.png">
+
+    <title> Canded | Daily text messages to reflect on your brainspace</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/sign-in/">
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- Custom styles for this template -->
+    <link href="assets/css/signup.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/0ea01178e5.js" crossorigin="anonymous"></script>
+
+</head>
+
+<body class="text-center body-image">
+    <form class="form-signin" id="signup">
+        <!-- <img class="mb-4" src="assets/img/preloader.png" alt=""> -->
+        <h1 class="h3 mb-3" style="font-weight:bold; color:#8429F2">Sign up</h1>
+
+        <label for="inputUsername" class="sr-only">Username</label>
+        <input type="text" id="inputUsername" class="form-control" placeholder="Username" required autofocus>
+        <label for="inputEmail" class="sr-only">Email address</label>
+        <input type="email" id="inputEmail" class="form-control" placeholder="Email address" name="login" required>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" id="inputPassword" class="form-control" name="password" placeholder="Password" required>
+        <div class="checkbox mb-3" style="text-align: center;">
+            <div class="row" style="padding-left: 25%;">
+
+
+
+                <div class="col-2 social-media-div" style="background-color: #ED2235;">
+                    <a href="#" style="color: white;"><i class="fab fa-google"></i> </a>
+                </div>
+
+                <div class="col-2 social-media-div" style="background-color: #3C5A9A;">
+                    <a href="#" style="color: white;"><i class="fab fa-facebook-f"></i> </a>
+                </div>
+
+                <div class="col-2 social-media-div" style="background-color: #1B9FF1;">
+                    <a href="#" style="color: white;"><i class="fab fa-twitter"></i> </a>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-lg  btn-block" style="background-color:#8429F2 ; color:white" type="submit">Sign
+            up</button>
+        </a></p>
+        <p class="mt-5 mb-3">Already have an account? <strong><a href="/login" style="color: #8429F2;">Log
+                    in</a></strong> </p>
+    </form>
+
+
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
+
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyDd-dKBBxrgEwSaDcTKntk2tJYXjPOoRZ0",
+            authDomain: "canded-1ccc6.firebaseapp.com",
+            databaseURL: "https://canded-1ccc6.firebaseio.com",
+            projectId: "canded-1ccc6",
+            storageBucket: "canded-1ccc6.appspot.com",
+            messagingSenderId: "821988719347",
+            appId: "1:821988719347:web:f58ad1fbd04a71fe80d586",
+            measurementId: "G-KET84ERS81"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+
+        document
+            .getElementById("signup")
+            .addEventListener("submit", (event) => {
+                event.preventDefault();
+                const login = event.target.login.value;
+                const password = event.target.password.value;
+
+                firebase
+                    .auth()
+                    .createUserWithEmailAndPassword(login, password)
+                    .then(({ user }) => {
+                        return user.getIdToken().then((idToken) => {
+                            return fetch("/sessionLogin", {
+                                method: "POST",
+                                headers: {
+                                    Accept: "application/json",
+                                    "Content-Type": "application/json",
+                                    "CSRF-Token": Cookies.get("XSRF-TOKEN"),
+                                },
+                                body: JSON.stringify({ idToken }),
+                            });
+                        });
+                    })
+                    .then(() => {
+                        var user = firebase.auth().currentUser;
+                        user.sendEmailVerification().then(function () {
+                        }).catch(function (error) {
+                            alert("Please try again");
+                        });
+
+                        return firebase.auth().signOut();
+                    })
+                    .then(() => {
+                        alert("Verification mail sent. Please check your mail");
+
+                        window.location.assign("/login");
+
+                    }).catch(function () {
+                        alert("Please try again");
+                    });
+
+
+                return false;
+            });
+    </script>
+</body>
+
+</html>
+<p style="font-family: cursive;"></p>
